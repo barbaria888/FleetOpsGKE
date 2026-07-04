@@ -29,11 +29,11 @@ By completing this walkthrough, you will establish a production-grade multi-clus
 
 ## Architecture
 
-<p align="center">
-  <img src="images/fleet-architecture-topology.png" alt="GKE Fleet Multi-Cluster Architecture Topology" width="900">
-</p>
-
 The architecture comprises a **GKE Fleet** serving as the central management plane, with registered Autopilot and Standard clusters spanning multiple regions. Fleet features like **Anthos Service Mesh** and **Policy Controller** are enabled cluster-wide, while teams operate within isolated namespaces with dedicated RBAC bindings.
+
+<p align="center">
+  <img src="images/new-fleet-registration-successful.png" alt="GKE Fleet Multi-Cluster Architecture Overview" width="800">
+</p>
 
 ### Core Components
 
@@ -411,6 +411,10 @@ roleRef:
 ```bash
 kubectl apply -f team-rbac.yaml
 ```
+
+<p align="center">
+  <img src="images/team-member-user-added-and-cluster-renamed.png" alt="Team Member Added and Cluster Configuration" width="800">
+</p>
 
 <p align="center">
   <img src="images/teams-namespaces-isolation.png" alt="Team RBAC Configuration in Kubernetes Console" width="800">
