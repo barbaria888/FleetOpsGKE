@@ -1,26 +1,15 @@
-<div align="center">
-
-
-
-#  FleetOpsGKE
-
-### Manage Workloads at Scale with GKE Fleets and Teams
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" height="60" alt="Google Cloud" /> &nbsp;
-<img src="https://raw.githubusercontent.com/barbaria888/barbaria888/main/gke-icon.png.png" height="70" alt="Google Kubernetes Engine"/>&nbsp;
-<img height="70" alt="configmanagement" src="https://github.com/user-attachments/assets/2102d7a3-6fd7-4479-9adc-f47142ff015a" /> &nbsp;
-<img height="70" alt="policyanalyzer" src="https://github.com/user-attachments/assets/20219955-61a0-434c-a022-5c78614308e8" /> &nbsp;
-</div>
+# GKE Fleets Enterprise Platform: Managing Multi-Cluster Environments at Scale
 
 ## Executive Summary
 
-A production-grade implementation playbook for orchestrating multi-cluster GKE environments at scale using GKE Fleets and Teams. This walkthrough guides you through establishing unified cluster management, enabling centralized policies, and enforcing secure team boundaries.
+This repository provides an enterprise-grade playbook for orchestrating and governing multi-cluster Google Kubernetes Engine (GKE) environments using GKE Fleets and GKE Teams. By implementing unified cluster management, platform administrators can enforce consistent security policies, manage multi-cluster services, and establish secure workspace boundaries for application development teams.
 
 ---
 
 ## Architecture Overview
 
 <p align="center">
-  <img src="images/new-fleet-registration-successful.png" alt="GKE Fleet Multi-Cluster Architecture Topology" width="800">
+  <img src="images/fleet-architecture-topology.png" alt="GKE Fleet Multi-Cluster Architecture Topology" width="800">
 </p>
 
 The GKE Fleets Enterprise Platform architecture integrates a centralized management hub (the Fleet) with heterogeneous cluster resources, service mesh governance, and isolation boundaries. It allows platform administrators to manage GKE clusters as a single entity while maintaining strict workspace separation for product development teams.
@@ -39,11 +28,23 @@ This lab solves these challenges by establishing a GKE Fleet to unify multi-clus
 
 ---
 
+## Design Decisions & Trade-offs
+
+When designing a multi-cluster GKE platform for enterprise workloads, several key architectural decisions must be made to balance operational overhead against cluster-level flexibility:
+
+* **Autopilot vs. Standard Clusters**: We utilize a hybrid model featuring both cluster modes:
+  - **GKE Autopilot** is selected to eliminate node management overhead and automate node scaling, patching, and security hardening. This shifts the team's focus entirely to application delivery while Google Cloud manages the infrastructure.
+  - **GKE Standard** is selected to provide granular control over node pools, VM machine types, and custom scaling boundaries. This is suitable for teams that require specialized hardware (like GPUs or local SSDs) or precise control over the underlying VM configurations.
+* **Centralized vs. Decentralized Policy Enforcement**: Rather than configuring Gatekeeper constraints on each cluster individually, we enable **Policy Controller** fleet-wide. This centralized GitOps-driven model ensures all clusters remain synchronized with organizational guardrails and prevents configuration drift.
+* **Logical vs. Physical Isolation**: We map physical clusters to logical **Teams** using namespaces and GKE Hub team constructs. This provides a soft multi-tenancy model within shared clusters, which reduces infrastructure costs compared to provisioning dedicated physical clusters for every team, while still maintaining strict RBAC-enforced isolation.
+
+---
+
 ## Reference Architecture
 
 The architecture relies on the following key Google Cloud and GKE services, configured to work in unison to provide a cohesive management and runtime plane.
 
-☸️ GKE Fleets
+✦ GKE Fleets <!-- TODO: add official doc link -->
 
 GKE Fleets is Google Cloud's centralized management framework for multi-cluster operations.
 
@@ -56,9 +57,9 @@ It groups clusters logically to simplify management and enable unified feature d
 
 ---
 
-☸️ GKE Autopilot
+✦ GKE Autopilot
 
-GKE Autopilot is a fully managed, Google-operated mode of Google Kubernetes Engine.
+GKE Autopilot is a fully managed, Google-operated mode of [GKE](https://cloud.google.com/kubernetes-engine/docs).
 
 It automates node provisioning, scaling, patching, and security configuration based on pod resource requests while allowing teams to focus on building applications rather than managing VM nodes and operating system security.
 
@@ -69,9 +70,9 @@ It automates node provisioning, scaling, patching, and security configuration ba
 
 ---
 
-☸️ GKE Standard
+✦ GKE Standard
 
-GKE Standard is a user-managed mode of Google Kubernetes Engine.
+GKE Standard is a user-managed mode of [GKE](https://cloud.google.com/kubernetes-engine/docs).
 
 It provides granular control over node pools, VM types, and OS versions while allowing teams to fine-tune infrastructure for specialized workloads.
 
@@ -82,7 +83,7 @@ It provides granular control over node pools, VM types, and OS versions while al
 
 ---
 
-☸️ Anthos Service Mesh (ASM)
+✦ Anthos Service Mesh <!-- TODO: add official doc link -->
 
 Anthos Service Mesh is Google Cloud's fully managed service mesh built on Istio.
 
@@ -95,7 +96,7 @@ It enables secure, observable, and resilient communication between services whil
 
 ---
 
-☸️ Policy Controller
+✦ Policy Controller <!-- TODO: add official doc link -->
 
 Policy Controller is Google Cloud's declarative policy engine built on the open-source OPA Gatekeeper project.
 
@@ -113,14 +114,16 @@ It audits and enforces Kubernetes resource configurations against organizational
 To complete this lab, ensure you have access to a Google Cloud project with the necessary administrative permissions.
 
 ### Required IAM Roles
+
 Ensure your identity is bound to the following IAM roles in the target Google Cloud project:
-- **Kubernetes Engine Admin** (`roles/container.admin`) - Full control over GKE resources and cluster operations.
-- **GKE Hub Admin** (`roles/gkehub.admin`) - Authorization to register clusters to GKE Fleets.
-- **Service Account Admin** (`roles/iam.serviceAccountAdmin`) - Permissions to manage service accounts for team isolation.
-- **Anthos Service Mesh Admin** (`roles/anthos.serviceMeshAdmin`) - Management rights for enabling ASM features.
-- **Policy Admin** (`roles/anthosconfigmanagement.policyAdmin`) - Governance configuration capabilities for Policy Controller.
+* **Kubernetes Engine Admin** (`roles/container.admin`) - Full control over GKE resources and cluster operations.
+* **GKE Hub Admin** (`roles/gkehub.admin`) - Authorization to register clusters to GKE Fleets.
+* **Service Account Admin** (`roles/iam.serviceAccountAdmin`) - Permissions to manage service accounts for team isolation.
+* **Anthos Service Mesh Admin** (`roles/anthos.serviceMeshAdmin`) - Management rights for enabling ASM features.
+* **Policy Admin** (`roles/anthosconfigmanagement.policyAdmin`) - Governance configuration capabilities for Policy Controller.
 
 ### API Enablement
+
 Enable the required Google Cloud APIs for GKE Fleet and cluster operations:
 
 ```bash
@@ -148,20 +151,19 @@ gcloud services enable \
 
 The repository is structured logically to separate platform instructions from configuration files and assets:
 
-- 📁 **`kubernetes-manifests/`** - Kubernetes resource definitions for multi-cluster banking services:
-  - [`accounts-db.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/accounts-db.yaml) - Database service and state configuration for bank accounts.
-  - [`balance-reader.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/balance-reader.yaml) - Balance reader deployment and service.
-  - [`config.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/config.yaml) - ConfigMap and global parameters.
-  - [`contacts.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/contacts.yaml) - Service contacts application deployment.
-  - [`frontend.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/frontend.yaml) - User interface frontend deployment.
-  - [`ledger-db.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/ledger-db.yaml) - Financial ledger database components.
-  - [`ledger-writer.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/ledger-writer.yaml) - Transaction log ledger writer deployment.
-  - [`loadgenerator.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/loadgenerator.yaml) - Synthetic load generation tool.
-  - [`transaction-history.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/transaction-history.yaml) - Transaction query backend service.
-  - [`userservice.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/userservice.yaml) - Core user authentication and profile database.
-- 📁 **`images/`** - Local folder containing architectural diagrams and CLI command verification screenshots.
-- 📄 **`README.md`** - Main playbook documenting enterprise deployment and setup steps.
-- 📄 **`Agent.md`** - Documentation guidelines and assistant prompt logic.
+* 📁 **`kubernetes-manifests/`** - Kubernetes resource definitions for multi-cluster banking services:
+  * [`accounts-db.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/accounts-db.yaml) - Database service and state configuration for bank accounts.
+  * [`balance-reader.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/balance-reader.yaml) - Balance reader deployment and service.
+  * [`config.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/config.yaml) - ConfigMap and global parameters.
+  * [`contacts.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/contacts.yaml) - Service contacts application deployment.
+  * [`frontend.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/frontend.yaml) - User interface frontend deployment.
+  * [`ledger-db.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/ledger-db.yaml) - Financial ledger database components.
+  * [`ledger-writer.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/ledger-writer.yaml) - Transaction log ledger writer deployment.
+  * [`loadgenerator.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/loadgenerator.yaml) - Synthetic load generation tool.
+  * [`transaction-history.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/transaction-history.yaml) - Transaction query backend service.
+  * [`userservice.yaml`](file:///d:/abhi/fleets/kubernetes-manifests/userservice.yaml) - Core user authentication and profile database.
+* 📁 **`images/`** - Local folder containing architectural diagrams and CLI command verification screenshots.
+* 📄 **`README.md`** - Main playbook documenting enterprise deployment and setup steps.
 
 ---
 
@@ -221,7 +223,7 @@ state:
 ```
 
 <p align="center">
-  <img src="images/new-fleet-registration-successful.png" alt="GKE Fleet Console Dashboard Showing Fleet Creation" width="800">
+  <img src="images/gke-fleet-console-view.png" alt="GKE Fleet Console Dashboard Showing Fleet Creation" width="800">
 </p>
 
 > [!WARNING]
@@ -305,7 +307,7 @@ standard-prod-membership    us-central1-a   standard-prod
 ```
 
 <p align="center">
-  <img src="images/new-fleet-registration-successful.png" alt="Cluster Registration Status in Fleet Console" width="800">
+  <img src="images/cluster-registration-status.png" alt="Cluster Registration Status in Fleet Console" width="800">
 </p>
 
 > [!WARNING]
@@ -337,7 +339,7 @@ gcloud container fleet mesh describe \
 ```
 
 <p align="center">
-  <img src="images/the-cluster-worklaod-app-works-and-config-for-fleet-monitrong-applied.png" alt="Anthos Service Mesh Feature Enablement Dashboard" width="800">
+  <img src="images/service-mesh-enablement.png" alt="Anthos Service Mesh Feature Enablement Dashboard" width="800">
 </p>
 
 > [!NOTE]
@@ -364,16 +366,15 @@ gcloud container fleet policycontroller membership set ${STANDARD_CLUSTER}-membe
     --branch=main
 ```
 
-<p align="center">
-  <img src="images/policycontroller-installed.png" alt="Policy Controller Installation Status" width="800">
-</p>
+Verify Policy Controller sync and violations status:
+
+```bash
+gcloud container fleet policycontroller describe \
+    --project=$PROJECT_ID
+```
 
 <p align="center">
-  <img src="images/both-cluster-policy-synced.png" alt="Both Clusters Synced with Policy Controller" width="800">
-</p>
-
-<p align="center">
-  <img src="images/policy-violations.png" alt="Policy Controller Dashboard Showing Constraint Violations" width="800">
+  <img src="images/policy-controller-dashboard.png" alt="Policy Controller Dashboard Showing Sync Status and Constraint Violations" width="800">
 </p>
 
 > [!CAUTION]
@@ -496,12 +497,14 @@ roleRef:
 kubectl apply -f team-rbac.yaml
 ```
 
-<p align="center">
-  <img src="images/team-member-user-added-and-cluster-renamed.png" alt="Team Member Added and Cluster Configuration" width="800">
-</p>
+Verify namespaces and RBAC configuration:
+
+```bash
+kubectl get namespaces -l team
+```
 
 <p align="center">
-  <img src="images/teams-namespaces-isolation.png" alt="Team RBAC Configuration in Kubernetes Console" width="800">
+  <img src="images/team-rbac-configuration.png" alt="Team RBAC Configuration and Namespaces Isolation" width="800">
 </p>
 
 > [!TIP]
@@ -620,17 +623,12 @@ kubectl apply -f team-beta-app.yaml
 Verify deployment status:
 
 ```bash
-# Verify Team Alpha deployment
 kubectl get deployments -n team-alpha
-kubectl get pods -n team-alpha
-
-# Verify Team Beta deployment
 kubectl get deployments -n team-beta
-kubectl get pods -n team-beta
 ```
 
 <p align="center">
-  <img src="images/kubectl-sample-app-deployed.png" alt="Application Deployment Success in GKE Console" width="800">
+  <img src="images/application-deployment-success.png" alt="Application Deployment Success in GKE Console" width="800">
 </p>
 
 ---
@@ -653,6 +651,7 @@ Use the checklist below to verify the successful configuration and deployment st
 ## Observability
 
 ### Fleet-Level Observability
+
 Access the GKE Fleet console to view aggregated cluster health and telemetry metrics:
 
 ```bash
@@ -661,7 +660,8 @@ echo "https://console.cloud.google.com/kubernetes/fleet?project=$PROJECT_ID"
 ```
 
 ### Team-Based Log Queries
-Query logs for specific team namespaces using Cloud Logging to verify isolated logging functionality:
+
+Query logs for specific team namespaces using Cloud Logging <!-- TODO: add official doc link --> to verify isolated logging functionality:
 
 ```bash
 # Team Alpha logs
@@ -676,11 +676,11 @@ gcloud logging read 'resource.type="k8s_container" AND resource.labels.namespace
 ```
 
 <p align="center">
-  <img src="images/team-fleet-running.png" alt="Fleet-Level Centralized Logging Dashboard" width="800">
+  <img src="images/fleet-logs-overview.png" alt="Fleet-Level Centralized Logging Dashboard" width="800">
 </p>
 
 > [!NOTE]
-> Cloud Logging automatically aggregates logs from all registered clusters. You can create log-based metrics and alerts for fleet-wide monitoring without additional instrumentation.
+> Cloud Logging <!-- TODO: add official doc link --> automatically aggregates logs from all registered clusters. You can create log-based metrics and alerts for fleet-wide monitoring without additional instrumentation.
 
 ### Fleet Feature Status Dashboard
 
@@ -706,10 +706,12 @@ gcloud container fleet mesh describe \
 ## Troubleshooting
 
 ### 1. Policy Controller Sync Errors
+
 * **Issue**: Policies fail to sync from Git repository.
 * **Resolution**: Validate the Git configuration using `gcloud container fleet policycontroller describe --project=$PROJECT_ID`. Ensure that the Git credentials and repository path are accessible, and that the directory structure matches the expected `policy-dir` structure (e.g., standard Git source layout).
 
 ### 2. Service Mesh Installation Latency
+
 * **Issue**: Anthos Service Mesh status remains stuck in `PROVISIONING` or `FAILED`.
 * **Resolution**: Verify that the cluster meets the GKE version and release channel prerequisites. You can inspect cluster-specific registration status details using:
   ```bash
@@ -717,6 +719,7 @@ gcloud container fleet mesh describe \
   ```
 
 ### 3. Workload Identity Integration Issues
+
 * **Issue**: Pods fail to authenticate to Google Cloud APIs using Workload Identity.
 * **Resolution**: Verify that Workload Identity is successfully enabled on the cluster and the registered membership:
   ```bash
