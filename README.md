@@ -1,4 +1,13 @@
-# GKE Fleets Enterprise Platform: Managing Multi-Cluster Environments at Scale
+<div align="center">
+
+  # FleetOpsGKE
+
+### Manage Workloads at Scale with GKE Fleets and Teams
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg" height="60" alt="Google Cloud" /> &nbsp;
+<img src="https://raw.githubusercontent.com/barbaria888/barbaria888/main/gke-icon.png.png" height="70" alt="Google Kubernetes Engine"/>&nbsp;
+<img height="70" alt="configmanagement" src="https://github.com/user-attachments/assets/2102d7a3-6fd7-4479-9adc-f47142ff015a" /> &nbsp;
+<img height="70" alt="policyanalyzer" src="https://github.com/user-attachments/assets/20219955-61a0-434c-a022-5c78614308e8" /> &nbsp;
+</div>
 
 ## Executive Summary
 
